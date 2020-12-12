@@ -4,22 +4,27 @@ import time, threading
 class serverManager:
 
     serverSocket = socket(AF_INET, SOCK_STREAM)
+    fileSocket = socket(AF_INET, SOCK_STREAM)
     HOST = ''
-    PORT = 9010
+    SERVER_PORT = 9010
+    FILE_PORT = 9011
     MAX_CONNECTION = 1
     CONNECTION_NUMBER = 0
-
-    is_connected = False
 
     sendService = None
     recieveService = None
 
+    userList = {}
+
+    def listen_server(self, serverSocket):
+        connectionSocket, address = serverSocket.accept()
+        self.CONNECTION_NUMBER += 1
+        print('[Log In Event] ' + print)
     def start_listen(self):
         self.serverSocket.bind((self.HOST, self.PORT))
         self.serverSocket.listen(self.MAX_CONNECTION)
         self.connectionSocket, self.address = self.serverSocket.accept()
         self.CONNECTION_NUMBER += 1
-        self.is_connected = True
         print(str(self.address) + ' 접속. 총 클라이언트 수: ' + str(self.CONNECTION_NUMBER))
         pass
 
