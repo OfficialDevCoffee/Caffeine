@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog_Connection(object):
     def setupUi(self, Dialog_Connection):
         Dialog_Connection.setObjectName("Dialog_Connection")
-        Dialog_Connection.resize(142, 79)
+        Dialog_Connection.resize(360, 150)
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog_Connection)
         self.verticalLayout.setObjectName("verticalLayout")
         self.horizontalLayout_host = QtWidgets.QHBoxLayout()
