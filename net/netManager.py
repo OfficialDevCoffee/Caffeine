@@ -1,116 +1,104 @@
-from socket import *
-import time, threading
+# netManager.py
+# Created On 2021-02-04, by dev. Coffee Official
+# For more information or to contact, please email to this address: official.devcoffee@gmail.com
 
-class serverManager:
+import socket, threading, time
 
-    serverSocket = socket(AF_INET, SOCK_STREAM)
-    fileSocket = socket(AF_INET, SOCK_STREAM)
-    HOST = ''
-    SERVER_PORT = 9010
-    FILE_PORT = 9011
-    MAX_CONNECTION = 1
-    CONNECTION_NUMBER = 0
-
-    sendService = None
-    recieveService = None
-
-    userList = {}
-
-    def listen_server(self, serverSocket):
-        connectionSocket, address = serverSocket.accept()
-        self.CONNECTION_NUMBER += 1
-        print('[Log In Event] ' + print)
-    def start_listen(self):
-        self.serverSocket.bind((self.HOST, self.PORT))
-        self.serverSocket.listen(self.MAX_CONNECTION)
-        self.connectionSocket, self.address = self.serverSocket.accept()
-        self.CONNECTION_NUMBER += 1
-        print(str(self.address) + ' 접속. 총 클라이언트 수: ' + str(self.CONNECTION_NUMBER))
-        pass
-
-    def send(self, connectionSocket):
-        while True:
-            message = input('>> ')
-            connectionSocket.send(message.encode('utf-8'))
-            pass
-        pass
-
-    def recieve(self, connectionSocket):
-        while True:
-            message = connectionSocket.recv(1024).decode('utf-8')
-            print('Counter: ' + str(message))
-            pass
-        pass
-
-    def start_service(self):
-        self.sendService = threading.Thread(target = self.send, args = (self.connectionSocket,))
-        self.recieveService = threading.Thread(target =  self.recieve, args = (self.connectionSocket,))
-        self.sendService.start()
-        self.recieveService.start()
-        pass
+class ServerManager():
+    SERVER_PORT = 9009
+    Server_Socket = None
     
-    def start_waiting(self):
-        while True:
-            time.sleep(1)
+    def __init__(self, server_port= 9009):
+
+        self.SERVER_PORT = server_port
+
+        self.Server_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.Server_Socket.bind(('', self.SERVER_PORT))
+        self.Server_Socket.listen()
+        self.log("Server Started At / SERVER_PORT: " + str(self.SERVER_PORT))
+
+        try:
+            while True:
+                client_socket, client_address = self.Server_Socket.accept()
+                client_thread = threading.Thread(target= self.bind, args= (client_socket, client_address))
+                client_thread.start()
+                pass
+        except:
+            self.log("Server Internal Error. Shutting Down.")
+            pass
+        finally:
+            self.Server_Socket.close()
             pass
         pass
 
-    def __init__(self, HOST = '', PORT = 9010, MAX_CONNECTION = 1):
-        self.HOST = HOST
-        self.PORT = PORT
-        self.is_connected = False
+    def log(self, message):
+        now = time.localtime()
+        timestamp = "[%04d-%02d-%02d %02d:%02d:%02d INFO]" % (now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec)
+        print(timestamp, message)
         pass
 
+    def bind(self, client_socket, client_address):
+        self.log("Client Connected >> " + str(client_address))
+        try:
+            # 접속 종료시 except 나옴.
+            while True:
+                data = client_socket.recv(4)
+                incoming_bytes_length = int.from_bytes(data, "little")
+                data = client_socket.recv(incoming_bytes_length).decode()
+                self.log("Client Issued To Send Message >> Client Address: " + str(client_address) + ", Message: " + str(data))
+                pass
+        except:
+            self.log("Client Disconnected >> " + str(client_address))
+            pass
+        finally:
+            client_socket.close()
+            pass
+        pass
     pass
 
-class clientManager:
+class ClientManager():
+    SERVER_HOST = '127.0.0.1'
+    SERVER_PORT = 9009
+    Client_Socket = None
 
-    clientSocket = socket(AF_INET, SOCK_STREAM)
-    HOST = 'localhost'
-    PORT = 9010
+    def __init__(self, server_host= '127.0.0.1', server_port= 9009):
+        self.SERVER_HOST = server_host
+        self.SERVER_PORT = server_port
 
-    is_connected = False
+        self.Client_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.Client_Socket.connect((self.SERVER_HOST, self.SERVER_PORT))
 
-    sendService = None
-    recieveService = None
+        recvThread = threading.Thread(target= self.recv, args= (self.Client_Socket,))
+        recvThread.start()
+        pass
+
+    def send(self, data):
+        raw_data = data.encode()
+        data_bytes_length = len(raw_data)
         
-    def start_listen(self):
-        self.clientSocket.connect((self.HOST, self.PORT))
-        self.is_connected = True
-        print(self.HOST + " 접속됨.")
-        pass
-    
-    def send(self, clientSocket):
-        while True:
-            message = input('>> ')
-            clientSocket.send(message.encode('utf-8'))
+        try:
+            # server로 데이터 길이를 전송
+            self.Client_Socket.sendall(data_bytes_length.to_bytes(4, byteorder="little"))
+            # server로 raw_data 전송
+            self.Client_Socket.sendall(raw_data)
+            pass
+        except:
+            self.Client_Socket.close()
             pass
         pass
 
-    def recieve(self, clientSocket):
-        while True:
-            message = clientSocket.recv(1024).decode('utf-8')
-            print('Counter: ' + str(message))
+    def recv(self, client_socket):
+        try:
+            # 접속 종료시 except 나옴.
+            while True:
+                incoming_bytes_length = int.from_bytes(client_socket.recv(4), "little")
+                data = client_socket.recv(incoming_bytes_length).decode()
+                self.dataHandle()
+                pass
+        except:
+            pass
+        finally:
+            client_socket.close()
             pass
         pass
-
-    def start_service(self):
-        self.sendService = threading.Thread(target = self.send, args = (self.clientSocket,))
-        self.recieveService = threading.Thread(target = self.recieve, args = (self.clientSocket,))
-        self.sendService.start()
-        self.recieveService.start()
-        pass
-
-    def start_waiting(self):
-        while True:
-            time.sleep(1)
-            pass
-        pass
-
-    def __init__(self, HOST = 'localhost', PORT = 9010):
-        self.HOST = HOST
-        self.PORT = PORT
-        self.is_connected = False
-        pass
-
     pass
